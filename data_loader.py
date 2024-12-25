@@ -110,3 +110,11 @@ def load_documents(directory, chunk_sizes=[500]):
                         "text": chunk
                     })  # 添加每个文本块及其 chunk_size 到文档列表
     return documents  # 返回所有加载和切分的文档
+
+if __name__ == "__main__":
+    # 读取questions.pkl文件
+    import pickle
+    with open('/home/zhuhaiyang/RAG-main/database/questions.pkl', 'rb') as f:
+        questions = pickle.load(f)
+        print(f"Loaded {len(questions)} questions from file")
+    print(questions)

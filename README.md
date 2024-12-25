@@ -52,8 +52,6 @@ venv\Scripts\activate # Windows
 pip install -r requirements.txt
 ```
 
-> **注意**：不推荐直接安装 `requirements.txt` 里的依赖，那是我的环境，建议看 `suggestion.txt` 里需要的包来自行安装
-
 ### 环境变量配置
 
 创建 `.env` 文件并填写以下内容：
@@ -63,6 +61,7 @@ AZURE_OPENAI_ENDPOINT=
 AZURE_OPENAI_API_KEY=
 DEPLOYMENT_NAME=
 ```
+(目前不用写，因为还没有使用 Azure OpenAI，目前使用的是第三方提供的api，调用的是gpt3.5-turbo，估计还能调用300-500次，后面换开源模型)
 
 ## 使用指南
 
@@ -74,7 +73,7 @@ DEPLOYMENT_NAME=
 streamlit run app.py
 ```
 
-打开浏览器访问 [http://localhost:8501](http://localhost:8501)
+打开浏览器访问 [http://localhost:8501]
 
 ### 上传文档
 
@@ -89,79 +88,40 @@ streamlit run app.py
 输入问题，系统会检索相关文档并生成最终答案。检索方式可选：仅使用向量化、结合 BM25。
 
 ## 开发指南
-
-### 模块说明
-
-#### `answer_generator.py`
-
-功能：从检索到的文档生成最终答案。
-
-主要函数：
-
-```python
-def generate_final_answer(context, user_question):
-    """根据检索到的文档上下文生成最终答案。"""
-```
-
-#### `data_loader.py`
-
-功能：支持从 CSV、PDF、TXT 文件加载文档并分块处理。
-
-主要函数：
-
-```python
-def load_documents_from_csv(file_path)
-def load_documents(directory, chunk_sizes)
-```
-
-#### `question_generator.py`
-
-功能：基于文档内容生成问题。
-
-主要函数：
-
-```python
-def generate_questions(document_chunks)
-```
-
-#### `retriever.py`
-
-功能：检索与用户问题相关的文档和问题。
-
-主要函数：
-
-```python
-def retrieve_documents(user_query, index_questions, index_documents, ...)
-```
-
-#### `vectorizer.py`
-
-功能：支持向量化问题和文档块。
-
-主要函数：
-
-```python
-def vectorize_questions(questions, model_type, **kwargs)
-def build_vector_db(question_vectors, document_vectors)
-```
-
-## 项目文档
-
-### 概述
-
-本项目是一个基于 Streamlit 的文档问答系统。用户可以上传多种格式的文档，系统通过向量化和检索算法，从中提取相关答案。支持多种向量化模型（如本地和 Azure OpenAI），并结合 FAISS 和 BM25 提供高效的检索能力。
-
 ### 目录结构
 
 ```bash
-├── app.py                # 主应用入口
-├── answer_generator.py   # 答案生成模块
-├── data_loader.py        # 数据加载和预处理
-├── question_generator.py # 问题生成模块
-├── retriever.py          # 文档检索模块
-├── vectorizer.py         # 向量化模块
-├── requirements.txt      # 项目依赖
-├── .env                  # 环境变量配置文件
+project_root/
+├── app.py                    # 主应用程序文件
+├── data_loader.py           # 文档加载模块
+├── doc_embedding.py         # 文档向量化模块
+├── doc_retrieve.py          # 文档检索模块
+├── get_answer.py           # 答案生成模块
+├── query_context.py        # 查询上下文管理模块
+├── download_model.py       # 下载模型
+├── query_rewrite.py        # 问题重写
+├── doc_rerank.py          # 文档重排序
+├── query_processor.py      # 父类
+├── llm_response.py         # LLM 调用
+├── query_generate.py   # 问题生成模块
+├── chunk_split/               # 向量数据库和持久化文件目录
+│   ├── pdf_split              # 分割处理pdf文件
+│   ├── txt_split              # 分割处理txt文件
+│   ├── csv_split              # 分割处理csv文件
+│   ├── markdown_split         # 分割处理markdown文件
+├── database/               # 向量数据库和持久化文件目录
+│   ├── vector_index_questions.faiss  # 问题向量索引
+│   ├── vector_index_documents.faiss  # 文档向量索引
+│   ├── question_to_doc_mapping.pkl   # 问题到文档的映射关系
+│   ├── previous_questions.pkl        # 历史问题记录
+│   ├── questions.pkl                 # 问题列表
+│   ├── documents.pkl                 # 文档列表
+│   └── bm25_model.pkl               # BM25模型（可选）
+├── documents/              # 文档上传目录
+│   ├── processed_files.txt          # 已处理文件记录
+│   └── processed_hashes.txt         # 文件哈希值记录
+└── .env                    # 环境变量配置文件
+
 ```
 
 ## 功能特点
@@ -169,134 +129,8 @@ def build_vector_db(question_vectors, document_vectors)
 - 文档上传：支持 .csv、.pdf、.txt 文件。
 - 问题生成：基于文档内容自动生成问题。
 - 向量化检索：支持基于 FAISS 和 BM25 的高效检索。
-- 答案生成：利用 Azure OpenAI API 提供精准回答。
-
-### 安装指南
-
-#### 环境准备
-
-安装 Python（>= 3.8）
-
-#### 克隆项目代码
-
-```bash
-git clone <repository_url>
-cd <repository_name>
-```
-
-#### 创建并激活虚拟环境
-
-```bash
-python -m venv venv
-source venv/bin/activate # Linux/macOS
-venv\Scripts\activate # Windows
-```
-
-#### 安装依赖
-
-```bash
-pip install -r requirements.txt
-```
-
-#### 环境变量配置
-
-创建 `.env` 文件并填写以下内容：
-
-```plaintext
-AZURE_OPENAI_ENDPOINT=
-AZURE_OPENAI_API_KEY=
-DEPLOYMENT_NAME=
-```
-
-## 使用指南
-
-### 本地启动
-
-运行应用：
-
-```bash
-streamlit run app.py
-```
-
-打开浏览器访问 [http://localhost:8501](http://localhost:8501)
-
-### 上传文档
-
-支持格式：.csv、.pdf、.txt。上传后，系统会根据指定的 chunk_size 自动分块处理。
-
-### 构建向量库
-
-可选择本地模型或 Azure OpenAI 模型进行向量化。支持多种配置，如向量化设备、模型名称等。
-
-### 提问与检索
-
-输入问题，系统会检索相关文档并生成最终答案。检索方式可选：仅使用向量化、结合 BM25。
-
-### 部署指南
-
-#### 本地部署
-
-按照上述安装和启动步骤即可。
-
-## 开发指南
-
-### 代码模块说明
-
-#### 核心模块
-
-##### `app.py`
-
-系统主入口，基于 Streamlit 构建交互界面。核心功能包括：
-- 上传与处理文档
-- 构建向量库
-- 提问与生成答案
-
-##### `answer_generator.py`
-
-核心功能：调用 Azure OpenAI 模型生成最终答案。
-
-示例函数：
-
-```python
-def generate_final_answer(context, user_question):
-    """ 根据检索到的文档上下文生成最终答案。 """
-```
-
-##### `data_loader.py`
-
-核心功能：加载 CSV、PDF、TXT 文件并进行分块。
-
-示例函数：
-
-```python
-def load_documents(directory, chunk_sizes=[500]):
-    """ 从指定目录加载文档，并切分为多个小块。 """
-```
-
-##### `retriever.py`
-
-核心功能：基于向量化和 BM25 的文档检索。
-
-示例函数：
-
-```python
-def retrieve_documents(user_query, index_questions, index_documents, ...):
-    """ 检索与用户问题相关的文档和问题。 """
-```
-
-##### `vectorizer.py`
-
-核心功能：使用 Azure OpenAI 生成文档和问题的向量表示。
-
-示例函数：
-
-```python
-def vectorize_questions(questions, model_type='azure_openai', **kwargs):
-    """ 向量化问题列表，支持 Azure OpenAI 模型。 """
-```
 
 ### 示例数据
-
 #### CSV 文件：
 
 ```csv
@@ -306,19 +140,12 @@ id,text
 ```
 
 #### PDF 文件
-
-支持多页 PDF，自动提取每页内容。
+data_loader.py 支持多页 PDF，自动提取每页内容。
 
 #### TXT 文件
-
-纯文本文件，按指定块大小切分。
+data_loader.py 支持纯文本文件，按指定块大小切分。
 
 ## 常见问题
-
-### 如何解决 Azure OpenAI API 调用失败？
-
-- 检查 `.env` 文件中的配置。
-- 确认 API 密钥有效并且有足够的配额。
 
 ### 如何清理缓存？
 
@@ -327,7 +154,6 @@ id,text
 ### 支持哪些模型？
 
 - 本地：all-mpnet-base-v2 等任何 sentence-transformers 支持的模型。
-- Azure OpenAI：如 text-embedding-ada-002。
 
 ## 构建向量库操作指南
 
@@ -360,21 +186,12 @@ id,text
 - 系统会根据不同的 chunk_size 将文档内容切分为多个小块，以便更高效地向量化和检索。
 
 #### 选择向量化模型类型
-
 - 选项 1：本地模型
   - 适用于没有使用云服务的情况。
   - 配置项：
     - 本地模型名称：如 all-mpnet-base-v2。
     - 设备类型：选择 CPU 或 CUDA（如果有 GPU 支持）。
 
-- 选项 2：Azure OpenAI 模型（推荐）
-  - 适用于已配置 Azure OpenAI 服务的用户。
-  - 配置项：
-    - API 密钥：Azure OpenAI 服务的访问密钥。
-    - API 端点：Azure OpenAI 服务的 URL。
-    - 嵌入模型名称：如 text-embedding-ada-002。
-
-> 注意：切换模型类型后，系统会自动清除缓存，以确保配置生效。
 
 #### 构建向量库
 
@@ -384,7 +201,6 @@ id,text
 ### 注意事项
 
 - 上传文档后，系统会跳过重复文件，但可以选择是否重新处理这些文档。
-- 在使用 Azure OpenAI 时，请确保 `.env` 文件中的配置项与界面中输入的内容一致。
 - 文档切分大小（chunk_size）会显著影响性能：
   - 较小的块：适合精细检索，但可能增加处理时间。
   - 较大的块：适合简单问题的快速检索。
