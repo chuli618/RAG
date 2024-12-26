@@ -5,12 +5,15 @@ import numpy as np
 from time import time
 from sentence_transformers import SentenceTransformer
 import torch
+from transformers import AutoModel, AutoTokenizer
 
 
 class DocEmbedding(QueryProcessor):
-    def __init__(self):
+    def __init__(self, model_name="bge-base-zh-v1.5"):
         super().__init__()
         self.name = "DocEmbedding"
+        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True).half()
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
     def process(self, context: QueryContext) -> None:
         """
@@ -20,11 +23,9 @@ class DocEmbedding(QueryProcessor):
             context: QueryContext对象，包含原始文档块和生成的问题
         """
         documents = context.all_documents
-        model_name = context.model_name
-        device = context.device
         if not documents:
             return np.empty((0, 768), dtype='float32')
-        vector_model = self.get_vector_model(model_name, device)
+        vector_model = self.get_vector_model(context)
         vectors = vector_model.encode(
             documents,
             # convert_to_numpy=True, # 直接输出numpy数组
@@ -38,7 +39,7 @@ class DocEmbedding(QueryProcessor):
             raise TypeError("向量化结果不是 numpy.ndarray")
         context.all_documents_vectors = vectors.astype('float32')  # 确保向量类型为 float32，FAISS 更兼容
     
-    def get_vector_model(self, model_name='bge-base-zh-v1.5', device='cpu'):
+    def get_vector_model(self, context: QueryContext):
         """
         根据指定的模型类型初始化并返回向量化模型。
         
@@ -50,6 +51,8 @@ class DocEmbedding(QueryProcessor):
         返回:
             object: 初始化后的模型对象。
         """
+        model_name = context.model_name
+        device = context.device
         model_name = "models/" + model_name
         return SentenceTransformer(model_name, device=device)
     
@@ -66,7 +69,7 @@ class DocEmbedding(QueryProcessor):
                 raise TypeError("向量化结果不是 numpy.ndarray")
         return vectors.astype('float32')  # 确保向量类型为 float32，FAISS 更兼容
 
-    def build_vector_db(self, question_vectors, document_vectors):
+    def build_vector_db(self, question_vectors: np.ndarray, document_vectors: np.ndarray):
         """
         构建问题和文档的向量数据库。
 

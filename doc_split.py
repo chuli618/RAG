@@ -9,6 +9,7 @@ class DocSplit(QueryProcessor):
     def __init__(self):
         """初始化PDF分块处理器"""
         super().__init__()
+        self.name = "DocSplit"
 
     def process(self, context: QueryContext):
         """
