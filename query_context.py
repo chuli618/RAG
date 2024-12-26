@@ -27,7 +27,7 @@ class QueryContext:
         self.final_questions = []  # 最终的问题列表
         self.generated_questions = []  # 基于文档内容生成的相关问题列表
         self.context_text = ""  # 用于生成答案的上下文文本
-        self.llm_response = ""  # LLM模型的原始响应文本
+        self.llm_response = ""  # LLM模型的响应文本
         self.final_answer = ""  # 最终生成的答案文本
 
         self.model_name = None
