@@ -18,8 +18,6 @@ def download_model(repo_name='BAAI', model_name='bge-base-zh-v1.5'):
     import subprocess
     # 获取当前文件所在目录
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    # 获取项目根目录
-    root_dir = os.path.dirname(current_dir)
     # 创建models目录
     models_dir = os.path.join(current_dir, "models")
     if not os.path.exists(models_dir):
@@ -33,4 +31,7 @@ def download_model(repo_name='BAAI', model_name='bge-base-zh-v1.5'):
 
 # 测试代码
 if __name__ == '__main__':
-    download_model(repo_name='BAAI', model_name='bge-base-zh-v1.5')
+    # download_model(repo_name='BAAI', model_name='bge-base-zh-v1.5')
+    download_model(repo_name='BAAI', model_name='bge-large-zh-v1.5')
+    download_model(repo_name='Qwen', model_name='Qwen2.5-7B-Instruct')
+    download_model(repo_name='BAAI', model_name='bge-reranker-large')
