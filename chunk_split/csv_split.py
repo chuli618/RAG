@@ -1,4 +1,4 @@
-from services.query_processor import QueryProcessor
+from query_processor import QueryProcessor
 from query_context import QueryContext
 import csv
 

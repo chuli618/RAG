@@ -3,7 +3,7 @@ from query_context import QueryContext
 import os
 import PyPDF2
 
-class PDFSplit(QueryProcessor):
+class DocSplit(QueryProcessor):
     """PDF文件分块处理器"""
     
     def __init__(self):
@@ -26,9 +26,13 @@ class PDFSplit(QueryProcessor):
             for file_path in context.pdf_files_path:
                 with open(file_path, "rb") as pdf_file:
                     # 读入 pdf 文件
+
                     # 分割 pdf 文件
+
                     pass
             context.pdf_chunks = chunks
+            # 生成文档
+            # context.all_documents = documents
         except Exception as e:
             print(f"处理PDF文件时发生错误: {str(e)}")
             return []
@@ -39,5 +43,11 @@ class PDFSplit(QueryProcessor):
         # 返回分割好的pdf chunks
         pass
 
-pdf_split = PDFSplit()
+doc_split = DocSplit()
 
+if __name__ == "__main__":
+    from markitdown import MarkItDown
+
+    md = MarkItDown()
+    result = md.convert("/home/zhuhaiyang/RAG-main/初赛训练数据集.pdf")
+    print(result.text_content)
