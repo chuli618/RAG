@@ -4,22 +4,23 @@ import json
 import requests
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
-
+import os
 class LLMResponse(QueryProcessor):
     """
     该类负责调用OpenAI API获取LLM的响应结果。
     """
     
-    def __init__(self, model_name="models/Qwen2.5-7B-Instruct", device="cpu"):
+    def __init__(self, model_name="models/Qwen2.5-7B-Instruct", device="cuda"):
         super().__init__()
         self.name = "LLMResponse"
-        # self.openai_api_key = openai_api_key
-        # self.openai_base_url = openai_base_url
+        self.device = device
+        self.model_name = model_name
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-            device_map=device
+            torch_dtype="auto",
+            device_map="auto"
         )
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             use_fast=True,
@@ -65,37 +66,17 @@ class LLMResponse(QueryProcessor):
         response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
         return response
-        # payload = json.dumps({
-        #     # "model": "gpt-3.5-turbo",
-        #     "model": "gpt-4o",
-        #     'messages':[
-        #         {"role": "system", "content": system_prompt},
-        #         {"role": "user", "content": user_query}
-        #     ],
-        #     "safe_mode": False,
-        #     "max_tokens": 100,
-        #     "temperature": 0.7,
-        #     "n": 1,
-        # })
-        
-        # headers = {
-        #     'Authorization': 'Bearer ' + self.openai_api_key,
-        #     'User-Agent': 'Apifox/1.0.0 (https://apifox.com)', 
-        #     'Content-Type': 'application/json'
-        # }
-        
-        # response = requests.request("POST", self.openai_base_url, headers=headers, data=payload)
-        # response_data = response.json()
-        # return response_data['choices'][0]['message']['content']
     
 
-
-# openai_api_key = os.getenv("OPENAI_API_KEY")
-# openai_base_url = os.getenv("OPENAI_BASE_URL")
-# llm_response = LLMResponse(openai_api_key, openai_base_url)
 llm_response = LLMResponse()
 
 # 测试代码
 if __name__ == "__main__":
-    response = llm_response.process("这是什么东西。")
-    print(response)
+    import time
+    
+    start_time = time.time()
+    response = llm_response.process("你觉得朋友和家人哪一个更重要？")
+    end_time = time.time()
+    
+    print(f"Response: {response}")
+    print(f"Time taken: {end_time - start_time:.2f} seconds")
