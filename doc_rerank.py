@@ -18,22 +18,22 @@ class DocRerank(QueryProcessor):
 
     def process(self, context: QueryContext) -> None:
         """
-        List[str] -> top_k List[str]:
+            List[str] -> top_k List[str]:
 
-        对检索到的原始文档进行重排序，根据与query的相关性得分重新排序，
-        并更新context的filter_chunks、rerank_chunks、final_chunks
+            对检索到的原始文档进行重排序，根据与query的相关性得分重新排序，
+            并更新context的filter_chunks、rerank_chunks、final_chunks
 
-        Args:
-            context (QueryContext): 包含用户查询和原始文档列表
-                - context.user_original_query: 用户查询
-                - context.original_chunks: 原始文档列表
+            Args:
+                context (QueryContext): 包含用户查询和原始文档列表
+                    - context.user_origin_query: 用户查询
+                    - context.origin_chunks: 原始文档列表
         """
-        user_query = context.user_original_query  # str 
-        original_chunks = context.original_chunks   # List[str] 原始文档列表
+        user_query = context.user_origin_query  # str 用户查询
+        origin_chunks = context.origin_chunks   # List[str] 原始文档列表
 
         chunks_ = []
         # 保证数据类型可哈希，可被set处理
-        for item in original_chunks:
+        for item in origin_chunks:
             if isinstance(item, str):
                 chunks_.append(item)
         # 去重过滤
@@ -62,8 +62,8 @@ class DocRerank(QueryProcessor):
 
 if __name__ == "__main__":
     context = QueryContext()
-    context.user_original_query = "什么是AI？"
-    context.original_chunks = [
+    context.user_origin_query = "什么是AI？"
+    context.origin_chunks = [
         "人工智能(AI)是计算机科学的一个分支,它试图理解智能的本质,并生产出一种新的能以人类智能相似的方式做出反应的智能机器。",
         "AI包括机器学习、深度学习、自然语言处理等多个领域,已广泛应用于图像识别、语音识别、自动驾驶等场景。",
         "AI是一种技术",

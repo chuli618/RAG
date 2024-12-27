@@ -13,19 +13,22 @@ class QueryRewrite(QueryProcessor):
 
     def process(self, context: QueryContext) -> None:
         """
-        处理并重写用户的原始查询，优化查询效果。
+            str -> str, List[str]:
 
-        参数:
-            context (QueryContext): 包含查询相关信息的上下文对象
+            处理并重写用户的原始查询，优化查询效果。
 
-        返回:
-            None: 该方法不返回任何值，而是将处理后的查询存储在context中
+            参数:
+                context (QueryContext): 包含查询相关信息的上下文对象
+
+            返回:
+                None: 该方法不返回任何值，而是将处理后的查询存储在context中
         """
         try:
-            if not context.user_original_query:
+            if not context.user_origin_query:
                 print("用户查询为空")
                 return
-            user_query = context.user_original_query
+            user_query = context.user_origin_query # str 用户原始查询
+
             # 这里需要根据实际场景进行改写
             system_prompt = f"""
                 你是一名代码问答智能助手。你需要扩展、拆解用户的问题，并提供用户可以搜索的关键词列表来帮助用户回答有关该仓库的问题。
@@ -44,34 +47,33 @@ class QueryRewrite(QueryProcessor):
                 7. 不要试图直接回答用户的问题。
                 8. 回复请严格遵循以下json格式：
                 {{
-                "description": "对用户问题的一句话分析",
-                "subqueries":["step1", "step2"],
-                "keywords":["keyword1", "keyword2"],
+                    "description": "对用户问题的一句话分析",
+                    "subqueries":["step1", "step2"],
+                    "keywords":["keyword1", "keyword2"],
                 }}
 
                 # 示例1
                 示例提问：找到这个项目对外暴露的所有http服务
                 示例回答：
                 {{
-                "description": "用户想要了解这个项目提供的所有HTTP服务。",
-                "subqueries":[
-                "搜索通常处理HTTP请求的Java类。查找类似UserOperateCeontroller、ServiceGuideController、AlarmTestController或其他暗示web控制器的文件名。",
-                "识别带有@RestController、@Controller、@RequestMapping、@GetMapping、@PostMapping、@PutMapping、@DeleteMapping等注解的方法。",
-                "检查配置文件如application.properties、application.yml或特定环境的文件如prod.aci.yml中定义的服务器端口和上下文路径,这些都是HTTP服务的入口点。"
-                ],
-                "keywords":["Controller", "@RequestMapping", "@GetMapping", "@PostMapping"],
+                    "description": "用户想要了解这个项目提供的所有HTTP服务。",
+                    "subqueries":[
+                        "搜索通常处理HTTP请求的Java类。查找类似UserOperateCeontroller、ServiceGuideController、AlarmTestController或其他暗示web控制器的文件名。",
+                        "识别带有@RestController、@Controller、@RequestMapping、@GetMapping、@PostMapping、@PutMapping、@DeleteMapping等注解的方法。"
+                    ],
+                    "keywords":["Controller", "@RequestMapping", "@GetMapping", "@PostMapping"],
                 }}
 
                 # 示例2
                 示例提问：这个项目是否引入了fastjson依赖？
                 示例回答：
                 {{
-                "description": "用户想知道项目是否包含了fastjson依赖。",
-                "subqueries":[
-                "在`pom.xml`文件中搜索依赖项，查看是否列出了`fastjson`",
-                "在Java文件中查找引用`fastjson`类的import语句"
-                ],
-                "keywords":["fastjson", "dependency", "import com.alibaba.fastjson"],
+                    "description": "用户想知道项目是否包含了fastjson依赖。",
+                    "subqueries":[
+                        "在`pom.xml`文件中搜索依赖项，查看是否列出了`fastjson`",
+                        "在Java文件中查找引用`fastjson`类的import语句"
+                    ],
+                    "keywords":["fastjson", "dependency", "import com.alibaba.fastjson"],
                 }}
 
                 # 按以上规则处理用户如下提问，并严格按照json格式回答：
@@ -96,13 +98,31 @@ class QueryRewrite(QueryProcessor):
         except Exception as e:
             print(f"查询重写过程中发生错误: {str(e)}")
             # 如果重写失败，则使用原始查询
-            context.rewritten_query = context.user_query
-
+            context.rewritten_query = context.user_origin_query
+            context.query_keywords = []
 query_rewrite = QueryRewrite()
 
 if __name__ == "__main__":
-    context = QueryContext()
-    context.user_original_query = "这个项目有哪些核心模型？"
-    query_rewrite.process(context)
-    print(context.rewritten_query)
-    print(context.query_keywords)
+    # context = QueryContext()
+    # context.user_origin_query = "这个项目有哪些核心模型？"
+    # query_rewrite.process(context)
+    # print(context.rewritten_query)
+    # print(context.query_keywords)
+    
+    response = '''
+        {
+            "description": "用户想了解项目中的核心模型类或数据结构。",
+            "subqueries":[
+                "查找项目根目录下的主要包（如model、entity等，以确定核心模型类。",
+                "分析这些类是否有大量引用或继承关系，以判断其重要性。",
+                "检查是否存在任何文档或注释，指出哪些类是核心模型。",
+            ],
+            "keywords":["core model", "model package", "entity class", "class reference", "inheritance relationship"]
+        }
+    '''
+    # 解析响应存储为json格式
+    response_json = None
+    try:
+        response_json = json.loads(response)
+    except Exception as e:
+        print(f"JSON解析错误: {e}")

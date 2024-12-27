@@ -10,20 +10,18 @@ class GetAnswer(QueryProcessor):
 
     def process(self, context: QueryContext) -> None:
         """
-        处理QueryContext，根据用户问题和相关文档生成最终答案。
-        
-        Args:
-            context: QueryContext对象，包含用户问题和相关文档
+            List[str] -> str:
+
+            处理QueryContext，根据用户问题和final_chunks生成最终答案。
         """
         try:
             start_time = time()  # 记录开始时间
-            # 从context中获取相关文档内容
-            docs = [chunk['text'] for chunk in context.final_chunks]
-            context.context_text = "\n".join(docs)  # 将文档内容保存到context中
-            # 保存原始用户问题
-            original_query = context.user_original_query
+            # 拼接final_chunks作为上下文
+            context.context_text = "\n".join(context.final_chunks)  # 将文档内容保存到context中
+            # 原始用户问题
+            origin_query = context.user_origin_query
             # 构建提示语
-            user_query = f"根据以下内容回答用户的问题。\n\n用户问题：{original_query}\n\n相关文档：\n{context.context_text}\n\n答案："
+            user_query = f"根据以下内容回答用户的问题。\n\n用户问题：{origin_query}\n\n相关文档：\n{context.context_text}\n\n答案："
             # 调用LLM生成最终答案
             context.final_answer = llm_response.process(user_query)
             end_time = time()  # 记录结束时间

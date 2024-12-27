@@ -434,7 +434,7 @@ def main():
             # 用户输入
             user_input = st.text_input("请输入您的问题：")
 
-            global_context.user_original_query = user_input
+            global_context.user_origin_query = user_input
             global_context.user_query = user_input
             
             # 检查必要文件是否存在
