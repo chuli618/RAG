@@ -7,7 +7,7 @@ import torch
 import os
 class LLMResponse(QueryProcessor):
     """
-    该类负责调用OpenAI API获取LLM的响应结果。
+        该类负责调用OpenAI API获取LLM的响应结果。
     """
     
     def __init__(self, model_name="models/Qwen2.5-7B-Instruct", device="cuda"):
@@ -18,7 +18,8 @@ class LLMResponse(QueryProcessor):
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype="auto",
-            device_map="auto"
+            # device_map="auto"   # 运行在cuda环境则使用该参数
+            device=self.device
         )
 
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -31,6 +32,8 @@ class LLMResponse(QueryProcessor):
     
     def process(self, user_query, system_prompt="You are a helpful assistant.") -> str:
         """
+        str -> str:
+
         调用大语言模型处理用户输入的查询，生成回复。
 
         Args:
@@ -75,7 +78,7 @@ if __name__ == "__main__":
     import time
     
     start_time = time.time()
-    response = llm_response.process("你觉得朋友和家人哪一个更重要？")
+    response = llm_response.process("这是什么东西。")
     end_time = time.time()
     
     print(f"Response: {response}")

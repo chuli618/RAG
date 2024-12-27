@@ -7,10 +7,11 @@ import torch
 from transformers import AutoModel, AutoTokenizer
 from typing import List
 import warnings
+from langchain.schema.embeddings import Embeddings
 
 warnings.filterwarnings("ignore", category=UserWarning, message="TypedStorage is deprecated")
 
-class DocEmbedding(QueryProcessor):
+class DocEmbedding(Embeddings):
     def __init__(self, model_name="models/bge-large-zh-v1.5", device="cuda"):
         super().__init__()
         self.name = "DocEmbedding" # embedding维度：1024
@@ -27,22 +28,27 @@ class DocEmbedding(QueryProcessor):
         
         print("successful load embedding model")
 
-
     def process(self, context: QueryContext) -> None:
         """
-        List[str] -> List[List[float]]
+            List[str] -> List[List[float]]
 
-        处理QueryContext对象，将文本内容转换为向量嵌入表示。
-        
-        Args:
-            context (QueryContext): 包含待处理文档的上下文对象。context.all_texts中存储了需要向量化的文本列表。
+            处理QueryContext对象，将文本内容转换为向量嵌入表示。
             
-        Returns:
-            List[List[float]]: 返回文本的向量嵌入表示列表。每个文本对应一个向量，向量维度由模型决定。
-            同时会将向量存储在context.all_texts_vectors中。
+            Args:
+                context (QueryContext): 包含待处理文档的上下文对象。context.all_texts中存储了需要向量化的文本列表。
+                
+            Returns:
+                List[List[float]]: 返回文本的向量嵌入表示列表。每个文本对应一个向量，向量维度由模型决定。
+                同时会将向量存储在context.all_texts_vectors中。
         """
-        texts = context.all_texts  # texts: List[str]
+        context.all_texts_vectors = self.embed_documents(context.all_texts)
+    
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+            List[str] -> List[List[float]]
 
+            将文本内容转换为向量嵌入表示。
+        """
         num_texts = len(texts)
         texts = [t.replace("\n", " ") for t in texts]
         text_embeddings = []
@@ -63,68 +69,89 @@ class DocEmbedding(QueryProcessor):
                 batch_embeddings = torch.nn.functional.normalize(batch_embeddings, p=2, dim=1)
                 text_embeddings.extend(batch_embeddings.tolist())
 
-        context.all_texts_vectors = text_embeddings # List[List[float]]
+        return text_embeddings  # List[List[float]]
+    
+    def embed_query(self, text: str) -> List[float]:
+        """
+            str -> List[List[float]]
+
+            将文本内容转换为向量嵌入表示。
+        """
+        text = text.replace("\n", " ")
+        if 'bge' in self.model_name:
+            encoded_input = self.tokenizer([self.DEFAULT_QUERY_BGE_INSTRUCTION_ZH + text], padding=True,
+                                           truncation=True, return_tensors='pt').to(self.device)
+        else:
+            encoded_input = self.tokenizer([text], padding=True,
+                                           truncation=True, return_tensors='pt').to(self.device)
+        with torch.no_grad():
+            model_output = self.model(**encoded_input)
+            # Perform pooling. In this case, cls pooling.
+            sentence_embeddings = model_output[0][:, 0]
+        sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
+        # sentence_embeddings = (sentence_embeddings + self.mu) @ self.W
+        return sentence_embeddings[0].tolist()
     
 
-    # def build_vector_db(self, question_vectors: np.ndarray, document_vectors: np.ndarray):
-    #     """
-    #     构建问题和文档的向量数据库。
+    def build_vector_db(self, question_vectors: np.ndarray, document_vectors: np.ndarray):
+        """
+        构建问题和文档的向量数据库。
 
-    #     参数:
-    #         question_vectors (numpy.ndarray): 问题的向量表示。
-    #         document_vectors (numpy.ndarray): 文档的向量表示。
+        参数:
+            question_vectors (numpy.ndarray): 问题的向量表示。
+            document_vectors (numpy.ndarray): 文档的向量表示。
 
-    #     返回:
-    #         dict: 包含问题索引和文档索引的字典。
-    #     """
-    #     if not isinstance(question_vectors, np.ndarray) or not isinstance(document_vectors, np.ndarray):
-    #         raise TypeError("所有向量必须是 numpy.ndarray")
+        返回:
+            dict: 包含问题索引和文档索引的字典。
+        """
+        if not isinstance(question_vectors, np.ndarray) or not isinstance(document_vectors, np.ndarray):
+            raise TypeError("所有向量必须是 numpy.ndarray")
         
-    #     indices = {}
+        indices = {}
         
-    #     # 构建问题索引
-    #     if question_vectors.size > 0:
-    #         embedding_dim_q = question_vectors.shape[1]
-    #         index_q = faiss.IndexFlatL2(embedding_dim_q)
+        # 构建问题索引
+        if question_vectors.size > 0:
+            embedding_dim_q = question_vectors.shape[1]
+            index_q = faiss.IndexFlatL2(embedding_dim_q)
             
-    #         # 在添加向量之前打印维度信息
-    #         print(f"问题向量维度: {question_vectors.shape}")
-    #         print(f"FAISS 问题索引维度: {embedding_dim_q}")
+            # 在添加向量之前打印维度信息
+            print(f"问题向量维度: {question_vectors.shape}")
+            print(f"FAISS 问题索引维度: {embedding_dim_q}")
             
-    #         index_q.add(question_vectors)
+            index_q.add(question_vectors)
             
-    #         # 验证添加是否成功
-    #         if index_q.ntotal != question_vectors.shape[0]:
-    #             raise ValueError(f"FAISS 问题索引的向量数量 ({index_q.ntotal}) 与输入的向量数量 ({question_vectors.shape[0]}) 不匹配")
+            # 验证添加的问题数量是否一致
+            if index_q.ntotal != question_vectors.shape[0]:
+                raise ValueError(f"FAISS 问题索引的向量数量 ({index_q.ntotal}) 与输入的向量数量 ({question_vectors.shape[0]}) 不匹配")
             
-    #         indices['questions'] = index_q
-    #     else:
-    #         raise ValueError("没有可添加到FAISS索引的问题向量")
+            indices['questions'] = index_q
+        else:
+            raise ValueError("没有可添加到FAISS索引的问题向量")
         
-    #     # 构建文档索引
-    #     if document_vectors.size > 0:
-    #         embedding_dim_d = document_vectors.shape[1]
-    #         index_d = faiss.IndexFlatL2(embedding_dim_d)
+        # 构建文档索引
+        if document_vectors.size > 0:
+            embedding_dim_d = document_vectors.shape[1]
+            index_d = faiss.IndexFlatL2(embedding_dim_d)
             
-    #         # 在添加向量之前打印维度信息
-    #         print(f"文档向量维度: {document_vectors.shape}")
-    #         print(f"FAISS 文档索引维度: {embedding_dim_d}")
+            # 在添加向量之前打印维度信息
+            print(f"文档向量维度: {document_vectors.shape}")
+            print(f"FAISS 文档索引维度: {embedding_dim_d}")
             
-    #         index_d.add(document_vectors)
+            index_d.add(document_vectors)
             
-    #         # 验证添加是否成功
-    #         if index_d.ntotal != document_vectors.shape[0]:
-    #             raise ValueError("文档向量添加到 FAISS 索引失败")
+            # 验证添加是否成功
+            if index_d.ntotal != document_vectors.shape[0]:
+                raise ValueError("文档向量添加到 FAISS 索引失败")
             
-    #         indices['documents'] = index_d
-    #     else:
-    #         raise ValueError("没有可添加到FAISS索引的文档向量")
+            indices['documents'] = index_d
+        else:
+            raise ValueError("没有可添加到FAISS索引的文档向量")
         
-    #     # 打印最终的索引信息
-    #     print(f"构建完成 - 问题索引总数: {indices['questions'].ntotal}")
-    #     print(f"构建完成 - 文档索引总数: {indices['documents'].ntotal}")
+        # 打印最终的索引信息
+        print(f"构建完成 - 问题索引总数: {indices['questions'].ntotal}")
+        print(f"构建完成 - 文档索引总数: {indices['documents'].ntotal}")
         
-    #     return indices
+        return indices
 
 doc_embedding = DocEmbedding()
 
@@ -136,8 +163,8 @@ if __name__ == "__main__":
     # 添加一些测试文档
     context.all_texts = [
         "这是第一个测试文档。",
-        "这是第二个测试文档。",
-        "这是第三个测试文档。",
+        # "这是第二个测试文档。",
+        # "这是第三个测试文档。",
     ]
     
     try:
@@ -157,6 +184,7 @@ if __name__ == "__main__":
 
         # 打印形状
         print(f"文档向量的形状: ({num_rows}, {num_cols})")
+        print(context.all_texts_vectors)
   
     except Exception as e:
         print(f"测试过程中发生错误: {e}")

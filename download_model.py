@@ -1,24 +1,19 @@
 import warnings
 import os
+import subprocess
 warnings.filterwarnings("ignore", message="TypedStorage is deprecated")
 
 def download_model(repo_name='BAAI', model_name='bge-base-zh-v1.5'):
     """
-    从ModelScope下载预训练模型到本地目录。
+        从ModelScope下载预训练模型到本地'models/'目录。
 
-    参数:
-        repo_name (str): 模型仓库名称，默认为'BAAI'。
-        model_name (str): 模型名称，默认为'bge-base-zh-v1.5'。
-
-    功能:
-        - 使用modelscope命令行工具下载指定的模型
-        - 将模型保存到'models/{model_name}'目录下
-        - 支持自定义仓库名称和模型名称
+        参数:
+            repo_name (str): 模型仓库名称，默认为'BAAI'。
+            model_name (str): 模型名称，默认为'bge-base-zh-v1.5'。
     """
-    import subprocess
     # 获取当前文件所在目录
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    # 创建models目录
+    # 检查 models 目录是否存在，不存在则创建
     models_dir = os.path.join(current_dir, "models")
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
