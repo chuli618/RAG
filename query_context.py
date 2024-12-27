@@ -10,18 +10,12 @@ class QueryContext:
         self.rewritten_query = ""  # 重写后的用户查询 (str)
         self.query_keywords = []  # 重写后的用户查询的关键字列表 (list[str])
         self.user_query = user_original_query  # 处理过程中生成的中间问题 (str)
-        self.csv_files_path = []  # 存储读入的 csv文件路径 (list[str])
-        self.csv_chunks = []  # 存储分割好的 csv chunks (list[str])
         self.pdf_files_path = []  # 存储读入的 pdf 文件路径 (list[str])
-        self.pdf_chunks = []  # 存储分割好的 pdf chunks (list[str])、
+        self.pdf_chunks = []  # 存储分割好的 pdf chunks (list[str])
         self.pdf_documents = []  # 存储分割好的 pdf 文档 (list[document])
-        self.txt_files_path = []  # 存储读入的 txt 文件路径 (list[str])
-        self.txt_chunks = []  # 存储分割好的 txt chunks (list[str])
-        self.csv_chunk_sizes = []  # 存储 csv 文件的分块大小 (list[int])
         self.pdf_chunk_sizes = []  # 存储 pdf 文件的分块大小 (list[int])
-        self.txt_chunk_sizes = []  # 存储 txt 文件的分块大小 (list[int])
-        self.all_documents = []  # 存储需要被 embedding 的文本 (list[str])
-        self.all_documents_vectors = []  # 存储被 embedding 的文档的向量 (list[numpy.ndarray])
+        self.all_texts = []  # 存储需要被 embedding 的文本 (list[str])
+        self.all_texts_vectors = []  # 存储被 embedding 的文档的向量 (list[float])
 
         self.origin_chunks = []  # 原始检索到的文档块列表 (list[str])
         self.filter_chunks = []  # 经过过滤后的文档块列表 (list[str])
@@ -37,6 +31,13 @@ class QueryContext:
         self.llm_model_name = None  # 用于生成回答的大语言模型名称 (str)
         self.rerank_model_name = None  # 用于文档重排序的模型名称 (str)
         self.device = None  # 模型运行的设备类型,如'cpu'或'cuda' (str)
+
+        self.csv_files_path = []  # 存储读入的 csv文件路径 (list[str])
+        self.csv_chunks = []  # 存储分割好的 csv chunks (list[str])
+        self.txt_files_path = []  # 存储读入的 txt 文件路径 (list[str])
+        self.txt_chunks = []  # 存储分割好的 txt chunks (list[str])
+        self.csv_chunk_sizes = []  # 存储 csv 文件的分块大小 (list[int])
+        self.txt_chunk_sizes = []  # 存储 txt 文件的分块大小 (list[int])
 
         # 后续需要删除的参数
         self.index_questions = None
