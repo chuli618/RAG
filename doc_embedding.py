@@ -11,7 +11,7 @@ from langchain.schema.embeddings import Embeddings
 
 warnings.filterwarnings("ignore", category=UserWarning, message="TypedStorage is deprecated")
 
-class DocEmbedding(Embeddings):
+class DocEmbedding(Embeddings, QueryProcessor):
     def __init__(self, model_name="models/bge-large-zh-v1.5", device="cuda"):
         super().__init__()
         self.name = "DocEmbedding" # embedding维度：1024

@@ -10,7 +10,7 @@ class LLMResponse(QueryProcessor):
         该类负责调用OpenAI API获取LLM的响应结果。
     """
     
-    def __init__(self, model_name="models/Qwen2.5-7B-Instruct", device="cuda"):
+    def __init__(self, model_name="models/Qwen2.5-7B-Instruct", device="cpu"):
         super().__init__()
         self.name = "LLMResponse"
         self.device = device
@@ -19,7 +19,7 @@ class LLMResponse(QueryProcessor):
             model_name,
             torch_dtype="auto",
             # device_map="auto"   # 运行在cuda环境则使用该参数
-            device=self.device
+            device_map=self.device
         )
 
         self.tokenizer = AutoTokenizer.from_pretrained(

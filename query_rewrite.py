@@ -3,6 +3,12 @@ from query_context import QueryContext
 from llm_response import llm_response
 import json
 
+from get_logger import get_logger
+
+# 创建logger实例用于记录该文件的日志
+logger = get_logger(__file__)
+print(logger.name)
+
 class QueryRewrite(QueryProcessor):
     """查询重写处理器，用于改写和优化用户查询"""
     

@@ -29,10 +29,11 @@ class DocRetrieve(QueryProcessor):
         self.vector_db = context.vector_db
         self.bm25_top_k = context.bm25_top_k
         self.vector_top_k = context.vector_top_k
+        user_query = context.user_origin_query
         # 返回 List[tuple[str, float]]
-        bm25_res = self.bm25_retrieval(context.user_origin_query, self.bm25_top_k)
+        bm25_res = self.bm25_retrieval(user_query, self.bm25_top_k)
         # 返回 List[tuple[Document, float]]
-        emb_res = self.emb_retrieval(context.user_origin_query, self.vector_top_k)
+        emb_res = self.emb_retrieval(user_query, self.vector_top_k)
         return bm25_res, emb_res
 
     def bm25_retrieval(self, query, bm25_top_k=10):
@@ -46,6 +47,12 @@ class DocRetrieve(QueryProcessor):
         Returns:
             list: 返回得分最高的n个文档列表
         """
+        '''
+            get_top_n函数的源码只返回text文本，这里是修改了源码，修改路径：
+            进入'from rank_bm25 import BM25Okapi'中的'rank_bm25'，
+            搜索'BM25'类，找到'get_top_n'函数，修改最后一句代码为
+            'return [(documents[i], scores[i]) for i in top_n]'        
+        '''
         # 此处中文使用jieba分词
         query = jieba.lcut(query)  
         res = self.bm25_model.get_top_n(query, context.pdf_chunks, n=bm25_top_k)
@@ -63,7 +70,7 @@ class DocRetrieve(QueryProcessor):
             list[tuple[str, float]]: 返回得分最高的 k 个文档及其相似度分数
         """
         '''
-            similarity_search函数的源码只返回文档，这里是修改了源码，修改路径：
+            similarity_search函数的源码只返回Document，这里是修改了源码，修改路径：
             进入'from langchain.vectorstores import FAISS'中的'vectorstores'，
             ctrl+f搜索'FAISS'并进入文件，搜索'similarity_search'函数，修改最后一句代码为
             'return [(doc, score) for doc, score in docs_and_scores]'        
